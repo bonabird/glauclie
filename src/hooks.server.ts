@@ -1,9 +1,9 @@
 import type { Handle, HandleFetch } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
-import { env as publicEnv } from '$env/dynamic/public';
+import { allowRegistration } from '$lib/env/public';
+import { apiInternalUrl } from '$lib/server/env';
 import { fetchMe, refreshSession } from '$lib/server/api';
 
-const allowRegistration = publicEnv.PUBLIC_ALLOW_REGISTRATION !== 'false';
+const registrationEnabled = allowRegistration();
 
 const PUBLIC_PREFIXES = ['/login', '/register', '/forgot-password', '/reset-password'];
 const RESERVED_SEGMENTS = new Set([
@@ -56,7 +56,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	}
 
-	if (!allowRegistration && path === '/register') {
+	if (!registrationEnabled && path === '/register') {
 		return new Response(null, {
 			status: 302,
 			headers: { Location: '/login' }
@@ -80,22 +80,36 @@ export const handle: Handle = async ({ event, resolve }) => {
 };
 
 export const handleFetch: HandleFetch = async ({ event, request, fetch }) => {
-	if (!event.locals.authCookie) {
+	const apiBase = apiInternalUrl();
+	let parsed: URL;
+	try {
+		parsed = new URL(request.url, event.url.origin);
+	} catch {
 		return fetch(request);
 	}
 
-	const apiBase = env.API_INTERNAL_URL ?? 'http://localhost:8080';
-	const url = request.url;
-	const isApi =
-		url.startsWith(apiBase) ||
-		url.startsWith(`${event.url.origin}/api/`) ||
-		url.startsWith('/api/');
+	const isAppApi =
+		parsed.pathname.startsWith('/api/') &&
+		(parsed.origin === event.url.origin || request.url.startsWith('/api/'));
 
-	if (!isApi) {
+	if (!isAppApi) {
 		return fetch(request);
 	}
 
+	const backendUrl = `${apiBase}${parsed.pathname}${parsed.search}`;
 	const headers = new Headers(request.headers);
-	headers.set('cookie', event.locals.authCookie);
-	return fetch(new Request(request, { headers }));
+	const cookie = event.locals.authCookie ?? event.request.headers.get('cookie');
+	if (cookie) {
+		headers.set('cookie', cookie);
+	}
+
+	return fetch(
+		new Request(backendUrl, {
+			method: request.method,
+			headers,
+			body: request.body,
+			// @ts-expect-error — required for streaming bodies in Node 18+
+			duplex: 'half'
+		})
+	);
 };

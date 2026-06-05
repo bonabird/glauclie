@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PublicLinkPageData } from '$lib/server/public';
 	import Icon from '$lib/components/icons/Icon.svelte';
+	import { apiUrl } from '$lib/env/public';
 	import { resolveIconName } from '$lib/icons';
 
 	let { data } = $props();
@@ -16,8 +17,8 @@
 
 	async function handleLinkClick(link: PublicLinkPageData['links'][0]) {
 		const res = await fetch(
-			`/api/v1/public/${pageData.slug}/links/${link.id}/click`,
-			{ method: 'POST' }
+			apiUrl(`/api/v1/public/${pageData.slug}/links/${link.id}/click`),
+			{ method: 'POST', credentials: 'include' }
 		);
 		const action = await res.json();
 		if (!res.ok) return;
@@ -46,8 +47,9 @@
 			captureError = true;
 			return;
 		}
-		const res = await fetch(`/api/v1/public/${pageData.slug}/subscribe`, {
+		const res = await fetch(apiUrl(`/api/v1/public/${pageData.slug}/subscribe`), {
 			method: 'POST',
+			credentials: 'include',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ email: captureEmail, gdpr_consent: true })
 		});

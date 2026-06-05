@@ -1,3 +1,5 @@
+import { apiUrl } from '$lib/env/public';
+
 export class ApiError extends Error {
 	status: number;
 	constructor(status: number, message: string) {
@@ -10,7 +12,7 @@ type FetchOptions = RequestInit & { json?: unknown };
 
 async function tryRefreshSession(): Promise<boolean> {
 	try {
-		const res = await fetch('/api/v1/auth/refresh', {
+		const res = await fetch(apiUrl('/api/v1/auth/refresh'), {
 			method: 'POST',
 			credentials: 'include'
 		});
@@ -26,7 +28,7 @@ export async function api<T>(
 	retried = false
 ): Promise<T> {
 	const { json, headers, ...rest } = options;
-	const res = await fetch(path, {
+	const res = await fetch(apiUrl(path), {
 		...rest,
 		credentials: 'include',
 		headers: {

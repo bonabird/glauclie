@@ -1,7 +1,5 @@
-import { env } from '$env/dynamic/private';
 import type { SessionUser } from '$lib/types';
-
-const base = () => env.API_INTERNAL_URL ?? 'http://localhost:8080';
+import { serverApiUrl } from '$lib/server/env';
 
 function parseCookieHeader(header: string | null): Map<string, string> {
 	const jar = new Map<string, string>();
@@ -36,7 +34,7 @@ function applySetCookies(cookieHeader: string | null, setCookies: string[]): str
 
 export async function fetchMe(cookie: string | null): Promise<SessionUser | null> {
 	try {
-		const res = await fetch(`${base()}/api/v1/auth/me`, {
+		const res = await fetch(serverApiUrl('/api/v1/auth/me'), {
 			headers: cookie ? { cookie } : {}
 		});
 		if (!res.ok) return null;
@@ -53,7 +51,7 @@ export async function refreshSession(
 ): Promise<{ cookie: string; setCookies: string[] } | null> {
 	if (!cookie?.includes('refresh_token')) return null;
 	try {
-		const res = await fetch(`${base()}/api/v1/auth/refresh`, {
+		const res = await fetch(serverApiUrl('/api/v1/auth/refresh'), {
 			method: 'POST',
 			headers: { cookie }
 		});

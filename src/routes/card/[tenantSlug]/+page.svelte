@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import Icon from '$lib/components/icons/Icon.svelte';
+	import { apiUrl } from '$lib/env/public';
 	import { joinFullName } from '$lib/business-card';
 	import type { BrandColors, SocialLink } from '$lib/types';
 
@@ -109,8 +110,9 @@
 	async function initScan() {
 		loading = true;
 		error = '';
-		const res = await fetch(`/api/v1/public/${tenantSlug}/card/scan`, {
+		const res = await fetch(apiUrl(`/api/v1/public/${tenantSlug}/card/scan`), {
 			method: 'POST',
+			credentials: 'include',
 			headers: { 'Content-Type': 'application/json' },
 			body: '{}'
 		});
@@ -143,8 +145,9 @@
 		shareSubmitting = true;
 		error = '';
 		try {
-			const consentRes = await fetch(`/api/v1/public/${tenantSlug}/card/consent`, {
+			const consentRes = await fetch(apiUrl(`/api/v1/public/${tenantSlug}/card/consent`), {
 				method: 'POST',
+				credentials: 'include',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ scan_id: scanId, agreed: true })
 			});
@@ -152,8 +155,9 @@
 				const data = await consentRes.json();
 				throw new Error(data.error ?? 'Could not record consent');
 			}
-			const leadRes = await fetch(`/api/v1/public/${tenantSlug}/card/lead`, {
+			const leadRes = await fetch(apiUrl(`/api/v1/public/${tenantSlug}/card/lead`), {
 				method: 'POST',
+				credentials: 'include',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					scan_id: scanId,

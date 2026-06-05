@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { api, ApiError } from '$lib/api/client';
+	import { apiUrl, publicApiUrl } from '$lib/env/public';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
@@ -30,6 +31,7 @@
 		text: '#ffffff'
 	});
 	let socialLinks = $state<SocialLink[]>([]);
+	let qrSrc = $state(apiUrl('/api/v1/business-card/qr.png'));
 	let newPlatform = $state('');
 	let newSocialUrl = $state('');
 
@@ -65,6 +67,22 @@
 		if (!email && data.tenant?.contact_email) email = data.tenant.contact_email;
 		if (!website && data.tenant?.custom_domain) website = data.tenant.custom_domain;
 		if (!logoUrl && data.tenant?.logo_url) logoUrl = data.tenant.logo_url;
+		await loadQrImage();
+	}
+
+	async function loadQrImage() {
+		const url = apiUrl('/api/v1/business-card/qr.png');
+		if (!publicApiUrl()) {
+			qrSrc = url;
+			return;
+		}
+		try {
+			const res = await fetch(url, { credentials: 'include' });
+			if (!res.ok) return;
+			qrSrc = URL.createObjectURL(await res.blob());
+		} catch {
+			qrSrc = url;
+		}
 	}
 
 	$effect(() => {
@@ -202,7 +220,7 @@
 		<Card class="text-center">
 			<h2 class="mb-4 font-semibold text-midnight">QR code</h2>
 			<img
-				src="/api/v1/business-card/qr.png"
+				src={qrSrc}
 				alt="QR code for contact landing page"
 				class="mx-auto mb-4 rounded-lg border border-sky-mist"
 				width="256"

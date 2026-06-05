@@ -1,6 +1,4 @@
-import { env } from '$env/dynamic/private';
-
-const base = () => env.API_INTERNAL_URL ?? 'http://localhost:8080';
+import { serverApiUrl } from '$lib/server/env';
 
 export type PublicLinkPageData = {
 	slug: string;
@@ -35,7 +33,7 @@ export type PublicLinkPageData = {
 export async function fetchPublicLinkPage(tenantSlug: string): Promise<PublicLinkPageData | null> {
 	try {
 		const res = await fetch(
-			`${base()}/api/v1/public/${encodeURIComponent(tenantSlug)}/links`
+			serverApiUrl(`/api/v1/public/${encodeURIComponent(tenantSlug)}/links`)
 		);
 		if (!res.ok) return null;
 		return (await res.json()) as PublicLinkPageData;
@@ -47,7 +45,7 @@ export async function fetchPublicLinkPage(tenantSlug: string): Promise<PublicLin
 export async function fetchPublicLinkPageByDomain(host: string): Promise<PublicLinkPageData | null> {
 	try {
 		const res = await fetch(
-			`${base()}/api/v1/public/links/by-domain?host=${encodeURIComponent(host)}`
+			serverApiUrl(`/api/v1/public/links/by-domain?host=${encodeURIComponent(host)}`)
 		);
 		if (!res.ok) return null;
 		return (await res.json()) as PublicLinkPageData;

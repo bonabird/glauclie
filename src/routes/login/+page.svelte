@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { env } from '$env/dynamic/public';
+	import { allowRegistration } from '$lib/env/public';
 	import { goto } from '$app/navigation';
 	import { api, ApiError } from '$lib/api/client';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -10,7 +10,7 @@
 	let password = $state('');
 	let error = $state('');
 	let loading = $state(false);
-	const allowRegistration = env.PUBLIC_ALLOW_REGISTRATION !== 'false';
+	const registrationEnabled = allowRegistration();
 
 	async function submit(e: Event) {
 		e.preventDefault();
@@ -49,7 +49,7 @@
 		<p class="mt-4 text-center text-sm text-indigo">
 			<a href="/forgot-password" class="text-ocean hover:underline">Forgot password?</a>
 		</p>
-		{#if allowRegistration}
+		{#if registrationEnabled}
 			<p class="mt-2 text-center text-sm text-indigo">
 				No account?
 				<a href="/register" class="font-medium text-ocean hover:underline">Register</a>
