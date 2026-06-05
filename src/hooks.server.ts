@@ -1,6 +1,9 @@
 import type { Handle, HandleFetch } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
 import { fetchMe, refreshSession } from '$lib/server/api';
+
+const allowRegistration = publicEnv.PUBLIC_ALLOW_REGISTRATION !== 'false';
 
 const PUBLIC_PREFIXES = ['/login', '/register', '/forgot-password', '/reset-password'];
 const RESERVED_SEGMENTS = new Set([
@@ -51,6 +54,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 				headers: { Location: '/login' }
 			});
 		}
+	}
+
+	if (!allowRegistration && path === '/register') {
+		return new Response(null, {
+			status: 302,
+			headers: { Location: '/login' }
+		});
 	}
 
 	if (event.locals.user && (path === '/login' || path === '/register')) {
