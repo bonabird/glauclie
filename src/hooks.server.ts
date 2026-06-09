@@ -34,16 +34,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 		isPublicLinkPage(path) ||
 		isPublicCardPage(path);
 
-	let cookie = event.request.headers.get('cookie');
-	event.locals.user = await fetchMe(cookie);
+	if (!isPublic) {
+		let cookie = event.request.headers.get('cookie');
+		event.locals.user = await fetchMe(cookie);
 
-	if (!event.locals.user && cookie) {
-		const refreshed = await refreshSession(cookie);
-		if (refreshed) {
-			cookie = refreshed.cookie;
-			event.locals.authCookie = refreshed.cookie;
-			event.locals.authSetCookies = refreshed.setCookies;
-			event.locals.user = await fetchMe(cookie);
+		if (!event.locals.user && cookie) {
+			const refreshed = await refreshSession(cookie);
+			if (refreshed) {
+				cookie = refreshed.cookie;
+				event.locals.authCookie = refreshed.cookie;
+				event.locals.authSetCookies = refreshed.setCookies;
+				event.locals.user = await fetchMe(cookie);
+			}
 		}
 	}
 

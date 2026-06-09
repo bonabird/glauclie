@@ -42,6 +42,22 @@ export async function fetchPublicLinkPage(tenantSlug: string): Promise<PublicLin
 	}
 }
 
+export type PublicCardData = {
+	card: Record<string, unknown>;
+};
+
+export async function fetchPublicCard(tenantSlug: string): Promise<PublicCardData | null> {
+	try {
+		const res = await fetch(
+			serverApiUrl(`/api/v1/public/${encodeURIComponent(tenantSlug)}/card`)
+		);
+		if (!res.ok) return null;
+		return (await res.json()) as PublicCardData;
+	} catch {
+		return null;
+	}
+}
+
 export async function fetchPublicLinkPageByDomain(host: string): Promise<PublicLinkPageData | null> {
 	try {
 		const res = await fetch(

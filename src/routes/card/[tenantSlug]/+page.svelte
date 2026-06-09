@@ -1,30 +1,18 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import Icon from '$lib/components/icons/Icon.svelte';
-	import { apiUrl } from '$lib/env/public';
-	import { joinFullName } from '$lib/business-card';
-	import type { BrandColors, SocialLink } from '$lib/types';
+	import { apiUrl, publicApiUrl } from '$lib/env/public';
+	import { joinFullName, parsePublicCard } from '$lib/business-card';
+	import type { PageData } from './$types';
+
+	let { data }: { data: PageData } = $props();
+
+	const card = $derived(parsePublicCard(data.card));
+	const tenantSlug = $derived(data.tenantSlug);
+	const cardPersonName = $derived(joinFullName(card.firstName, card.surname, card.legacyName));
+	const cardHeading = $derived(cardPersonName || card.displayName);
 
 	let scanId = $state('');
-	let firstName = $state('');
-	let surname = $state('');
-	let legacyName = $state('');
-	let displayName = $state('');
-	let role = $state('');
-	let cardEmail = $state('');
-	let cardPhone = $state('');
-	let website = $state('');
-	let logoUrl = $state<string | null>(null);
-	let socialLinks = $state<SocialLink[]>([]);
-	let cardLinks = $state<{ label: string; url: string; icon?: string }[]>([]);
-	let brandColors = $state<BrandColors>({
-		background: '#00043c',
-		text: '#ffffff',
-		primary: '#0753b5',
-		secondary: '#010f5a'
-	});
 	let error = $state('');
-	let loading = $state(true);
 	let savedToDevice = $state(false);
 	let showShareModal = $state(false);
 	let shareSubmitting = $state(false);
@@ -37,34 +25,30 @@
 	let locationLabel = $state('');
 	let shareConsent = $state(false);
 
-	const tenantSlug = $derived($page.params.tenantSlug ?? '');
-	const cardPersonName = $derived(joinFullName(firstName, surname, legacyName));
-	const cardHeading = $derived(cardPersonName || displayName);
-
-	function parseSocialLinks(raw: unknown): SocialLink[] {
-		if (Array.isArray(raw)) return raw as SocialLink[];
-		if (typeof raw === 'string' && raw) return JSON.parse(raw);
-		return [];
+	async function recordScan(): Promise<string | null> {
+		if (scanId) return scanId;
+		if (!publicApiUrl()) return null;
+		try {
+			const res = await fetch(apiUrl(`/api/v1/public/${tenantSlug}/card/scan`), {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: '{}'
+			});
+			const body = await res.json();
+			if (!res.ok) return null;
+			scanId = body.scan_id;
+			return scanId;
+		} catch {
+			return null;
+		}
 	}
 
-	function applyCard(data: Record<string, unknown>) {
-		firstName = String(data.first_name ?? '');
-		surname = String(data.surname ?? '');
-		legacyName = String(data.name ?? '');
-		displayName = String(data.display_name ?? '');
-		role = String(data.role ?? '');
-		cardEmail = String(data.email ?? '');
-		cardPhone = String(data.phone ?? '');
-		website = String(data.website ?? '');
-		logoUrl = (data.logo_url as string | null) ?? null;
-		socialLinks = parseSocialLinks(data.social_links);
-		cardLinks = Array.isArray(data.links) ? data.links : [];
-		const c =
-			typeof data.brand_colors === 'object' && data.brand_colors
-				? (data.brand_colors as BrandColors)
-				: JSON.parse(String(data.brand_colors ?? '{}'));
-		brandColors = { ...brandColors, ...c };
-	}
+	$effect(() => {
+		data.tenantSlug;
+		if (!publicApiUrl()) return;
+		scanId = '';
+		void recordScan();
+	});
 
 	function escapeVcard(value: string) {
 		return value.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
@@ -72,22 +56,24 @@
 
 	function buildVcard() {
 		const lines = ['BEGIN:VCARD', 'VERSION:3.0'];
-		const fullName = cardPersonName || displayName;
+		const fullName = cardPersonName || card.displayName;
 		const org =
-			displayName && cardPersonName && displayName !== cardPersonName ? displayName : '';
-		if (firstName || surname) {
-			lines.push(`N:${escapeVcard(surname)};${escapeVcard(firstName)};;;`);
+			card.displayName && cardPersonName && card.displayName !== cardPersonName
+				? card.displayName
+				: '';
+		if (card.firstName || card.surname) {
+			lines.push(`N:${escapeVcard(card.surname)};${escapeVcard(card.firstName)};;;`);
 		}
 		if (fullName) lines.push(`FN:${escapeVcard(fullName)}`);
 		if (org) lines.push(`ORG:${escapeVcard(org)}`);
-		else if (displayName && !cardPersonName) {
-			lines.push(`ORG:${escapeVcard(displayName)}`);
+		else if (card.displayName && !cardPersonName) {
+			lines.push(`ORG:${escapeVcard(card.displayName)}`);
 		}
-		if (role) lines.push(`TITLE:${escapeVcard(role)}`);
-		if (cardEmail) lines.push(`EMAIL;TYPE=INTERNET:${escapeVcard(cardEmail)}`);
-		if (cardPhone) lines.push(`TEL;TYPE=CELL:${escapeVcard(cardPhone)}`);
-		if (website) lines.push(`URL:${escapeVcard(websiteHref(website))}`);
-		for (const link of socialLinks) {
+		if (card.role) lines.push(`TITLE:${escapeVcard(card.role)}`);
+		if (card.email) lines.push(`EMAIL;TYPE=INTERNET:${escapeVcard(card.email)}`);
+		if (card.phone) lines.push(`TEL;TYPE=CELL:${escapeVcard(card.phone)}`);
+		if (card.website) lines.push(`URL:${escapeVcard(websiteHref(card.website))}`);
+		for (const link of card.socialLinks) {
 			if (link.url) lines.push(`URL:${escapeVcard(link.url)}`);
 		}
 		lines.push('END:VCARD');
@@ -98,7 +84,7 @@
 		const blob = new Blob([buildVcard()], { type: 'text/vcard;charset=utf-8' });
 		const url = URL.createObjectURL(blob);
 		const anchor = document.createElement('a');
-		const fileBase = (cardPersonName || displayName || 'contact').replace(/[^\w\-]+/g, '-');
+		const fileBase = (cardPersonName || card.displayName || 'contact').replace(/[^\w-]+/g, '-');
 		anchor.href = url;
 		anchor.download = `${fileBase}.vcf`;
 		anchor.click();
@@ -107,30 +93,6 @@
 		showShareModal = true;
 	}
 
-	async function initScan() {
-		loading = true;
-		error = '';
-		const res = await fetch(apiUrl(`/api/v1/public/${tenantSlug}/card/scan`), {
-			method: 'POST',
-			credentials: 'include',
-			headers: { 'Content-Type': 'application/json' },
-			body: '{}'
-		});
-		const data = await res.json();
-		if (!res.ok) {
-			error = data.error ?? 'Card not found';
-			loading = false;
-			return;
-		}
-		scanId = data.scan_id;
-		applyCard(data.card);
-		loading = false;
-	}
-
-	$effect(() => {
-		if (tenantSlug) initScan();
-	});
-
 	function closeShareModal() {
 		showShareModal = false;
 		error = '';
@@ -138,6 +100,10 @@
 
 	async function submitShare(e: Event) {
 		e.preventDefault();
+		if (!publicApiUrl()) {
+			error = 'Sharing is unavailable — API URL is not configured.';
+			return;
+		}
 		if (!shareConsent) {
 			error = 'Please agree before sharing your details.';
 			return;
@@ -145,22 +111,24 @@
 		shareSubmitting = true;
 		error = '';
 		try {
+			const id = await recordScan();
+			if (!id) {
+				throw new Error('Could not start session — try again');
+			}
 			const consentRes = await fetch(apiUrl(`/api/v1/public/${tenantSlug}/card/consent`), {
 				method: 'POST',
-				credentials: 'include',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ scan_id: scanId, agreed: true })
+				body: JSON.stringify({ scan_id: id, agreed: true })
 			});
 			if (!consentRes.ok) {
-				const data = await consentRes.json();
-				throw new Error(data.error ?? 'Could not record consent');
+				const body = await consentRes.json();
+				throw new Error(body.error ?? 'Could not record consent');
 			}
 			const leadRes = await fetch(apiUrl(`/api/v1/public/${tenantSlug}/card/lead`), {
 				method: 'POST',
-				credentials: 'include',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					scan_id: scanId,
+					scan_id: id,
 					first_name: visitorFirstName,
 					surname: visitorSurname,
 					email: visitorEmail,
@@ -168,9 +136,9 @@
 					location_label: locationLabel.trim() || undefined
 				})
 			});
-			const data = await leadRes.json();
+			const body = await leadRes.json();
 			if (!leadRes.ok) {
-				throw new Error(data.error ?? 'Could not save details');
+				throw new Error(body.error ?? 'Could not save details');
 			}
 			shareSuccess = true;
 			setTimeout(() => {
@@ -196,21 +164,19 @@
 
 <div
 	class="flex min-h-screen items-center justify-center px-4 py-12"
-	style="background:{brandColors.background};color:{brandColors.text};font-family:system-ui,sans-serif"
+	style="background:{card.brandColors.background};color:{card.brandColors.text};font-family:system-ui,sans-serif"
 >
 	<div class="w-full max-w-md text-center">
-		{#if loading}
-			<p class="opacity-80">Loading…</p>
-		{:else if error && !showShareModal}
+		{#if error && !showShareModal}
 			<p class="text-red-300">{error}</p>
 		{:else}
 			<div
 				class="rounded-2xl border border-white/15 p-6 text-left shadow-lg"
-				style="background:{brandColors.secondary}"
+				style="background:{card.brandColors.secondary}"
 			>
-				{#if logoUrl}
+				{#if card.logoUrl}
 					<img
-						src={logoUrl}
+						src={card.logoUrl}
 						alt=""
 						class="mx-auto mb-4 h-16 w-16 rounded-full object-cover"
 					/>
@@ -218,67 +184,67 @@
 				{#if cardPersonName}
 					<h1 class="text-center text-2xl font-semibold">{cardPersonName}</h1>
 				{/if}
-				{#if displayName && (!cardPersonName || displayName !== cardPersonName)}
+				{#if card.displayName && (!cardPersonName || card.displayName !== cardPersonName)}
 					<p
 						class="text-center text-sm opacity-80"
 						class:mt-1={!!cardPersonName}
 						class:text-2xl={!cardPersonName}
 						class:font-semibold={!cardPersonName}
 					>
-						{displayName}
+						{card.displayName}
 					</p>
 				{/if}
-				{#if role}
-					<p class="mt-1 text-center text-sm opacity-80">{role}</p>
+				{#if card.role}
+					<p class="mt-1 text-center text-sm opacity-80">{card.role}</p>
 				{/if}
 
 				<ul class="mt-6 space-y-3 text-sm">
-					{#if cardEmail}
+					{#if card.email}
 						<li>
 							<a
-								href="mailto:{cardEmail}"
+								href="mailto:{card.email}"
 								class="flex items-center gap-2 underline-offset-2 hover:underline"
 							>
 								<span class="opacity-70">Email</span>
-								<span>{cardEmail}</span>
+								<span>{card.email}</span>
 							</a>
 						</li>
 					{/if}
-					{#if cardPhone}
+					{#if card.phone}
 						<li>
 							<a
-								href="tel:{cardPhone}"
+								href="tel:{card.phone}"
 								class="flex items-center gap-2 underline-offset-2 hover:underline"
 							>
 								<span class="opacity-70">Phone</span>
-								<span>{cardPhone}</span>
+								<span>{card.phone}</span>
 							</a>
 						</li>
 					{/if}
-					{#if website}
+					{#if card.website}
 						<li>
 							<a
-								href={websiteHref(website)}
+								href={websiteHref(card.website)}
 								target="_blank"
 								rel="noopener noreferrer"
 								class="flex items-center gap-2 underline-offset-2 hover:underline"
 							>
 								<span class="opacity-70">Website</span>
-								<span>{website}</span>
+								<span>{card.website}</span>
 							</a>
 						</li>
 					{/if}
 				</ul>
 
-				{#if socialLinks.length > 0}
+				{#if card.socialLinks.length > 0}
 					<div class="mt-6 flex flex-wrap justify-center gap-2">
-						{#each socialLinks as link (link.url)}
+						{#each card.socialLinks as link (link.url)}
 							<a
 								href={link.url}
 								target="_blank"
 								rel="noopener noreferrer"
 								class="rounded-lg px-3 py-1.5 text-sm font-medium"
-								style="background:{brandColors.primary};color:{brandColors.text}"
+								style="background:{card.brandColors.primary};color:{card.brandColors.text}"
 							>
 								{link.platform}
 							</a>
@@ -286,15 +252,15 @@
 					</div>
 				{/if}
 
-				{#if cardLinks.length > 0}
+				{#if card.cardLinks.length > 0}
 					<div class="mt-6 flex flex-col gap-2">
-						{#each cardLinks as link (link.url)}
+						{#each card.cardLinks as link (link.url)}
 							<a
 								href={websiteHref(link.url)}
 								target="_blank"
 								rel="noopener noreferrer"
 								class="block rounded-lg px-4 py-2.5 text-center text-sm font-medium"
-								style="background:{brandColors.primary};color:{brandColors.text}"
+								style="background:{card.brandColors.primary};color:{card.brandColors.text}"
 							>
 								{link.label}
 							</a>
@@ -305,7 +271,7 @@
 				<button
 					type="button"
 					class="mt-6 w-full rounded-xl py-3 font-medium"
-					style="background:{brandColors.primary};color:{brandColors.text}"
+					style="background:{card.brandColors.primary};color:{card.brandColors.text}"
 					onclick={downloadVcard}
 				>
 					{savedToDevice ? 'Saved — download again' : 'Save contact'}
@@ -324,7 +290,6 @@
 </div>
 
 {#if showShareModal}
-	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 	<div
 		class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center"
 		role="presentation"
@@ -332,7 +297,7 @@
 	>
 		<div
 			class="w-full max-w-md rounded-2xl p-6 text-left shadow-xl"
-			style="background:{brandColors.secondary};color:{brandColors.text}"
+			style="background:{card.brandColors.secondary};color:{card.brandColors.text}"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="share-modal-title"
@@ -409,7 +374,7 @@
 						<button
 							type="submit"
 							class="flex-1 rounded-xl py-3 font-medium disabled:opacity-60"
-							style="background:{brandColors.primary};color:{brandColors.text}"
+							style="background:{card.brandColors.primary};color:{card.brandColors.text}"
 							disabled={shareSubmitting}
 						>
 							{shareSubmitting ? 'Saving…' : 'Share details'}
