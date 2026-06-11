@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { allowRegistration } from '$lib/env/public';
-	import { goto } from '$app/navigation';
 	import { api, ApiError } from '$lib/api/client';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -21,7 +20,8 @@
 				method: 'POST',
 				json: { email, password }
 			});
-			await goto('/dashboard');
+			// Full navigation so SSR receives shared-domain auth cookies
+			window.location.href = '/dashboard';
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Login failed';
 		} finally {
