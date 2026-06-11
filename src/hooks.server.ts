@@ -26,6 +26,21 @@ function isPublicCardPage(path: string): boolean {
 	return parts.length === 2 && parts[0] === 'card' && !RESERVED_SEGMENTS.has(parts[1]);
 }
 
+async function resolveSession(event: Parameters<Handle>[0]['event']) {
+	let cookie = event.request.headers.get('cookie');
+	event.locals.user = await fetchMe(cookie);
+
+	if (!event.locals.user && cookie) {
+		const refreshed = await refreshSession(cookie);
+		if (refreshed) {
+			cookie = refreshed.cookie;
+			event.locals.authCookie = refreshed.cookie;
+			event.locals.authSetCookies = refreshed.setCookies;
+			event.locals.user = await fetchMe(cookie);
+		}
+	}
+}
+
 export const handle: Handle = async ({ event, resolve }) => {
 	const path = event.url.pathname;
 	const isPublic =
@@ -34,20 +49,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 		isPublicLinkPage(path) ||
 		isPublicCardPage(path);
 
-	if (!isPublic) {
-		let cookie = event.request.headers.get('cookie');
-		event.locals.user = await fetchMe(cookie);
-
-		if (!event.locals.user && cookie) {
-			const refreshed = await refreshSession(cookie);
-			if (refreshed) {
-				cookie = refreshed.cookie;
-				event.locals.authCookie = refreshed.cookie;
-				event.locals.authSetCookies = refreshed.setCookies;
-				event.locals.user = await fetchMe(cookie);
-			}
-		}
-	}
+	// Always resolve session when cookies are present (needed for /login redirect).
+	await resolveSession(event);
 
 	if (!isPublic && path.startsWith('/dashboard')) {
 		if (!event.locals.user) {

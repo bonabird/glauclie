@@ -20,8 +20,8 @@
 				method: 'POST',
 				json: { email, password }
 			});
-			// Full navigation so SSR receives shared-domain auth cookies
-			window.location.href = '/dashboard';
+			window.location.assign('/dashboard');
+			return;
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Login failed';
 		} finally {
