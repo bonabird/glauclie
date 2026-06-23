@@ -1,17 +1,16 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api/client';
+	import { clickOutside } from '$lib/actions/click-outside';
 	import Icon from '$lib/components/icons/Icon.svelte';
-	import type { Notification, SessionUser, TenantProfile } from '$lib/types';
+	import type { Notification, TenantProfile } from '$lib/types';
 
 	let {
-		user,
 		tenant,
 		unreadCount = 0,
 		recentNotifications = [],
 		onRefreshNotifications
 	}: {
-		user: SessionUser;
 		tenant: TenantProfile | null;
 		unreadCount?: number;
 		recentNotifications?: Notification[];
@@ -20,6 +19,24 @@
 
 	let menuOpen = $state(false);
 	let bellOpen = $state(false);
+
+	function toggleBell() {
+		bellOpen = !bellOpen;
+		if (bellOpen) menuOpen = false;
+	}
+
+	function toggleMenu() {
+		menuOpen = !menuOpen;
+		if (menuOpen) bellOpen = false;
+	}
+
+	function closeBell() {
+		bellOpen = false;
+	}
+
+	function closeMenu() {
+		menuOpen = false;
+	}
 
 	async function logout() {
 		await api('/api/v1/auth/logout', { method: 'POST' });
@@ -52,12 +69,13 @@
 	</div>
 
 	<div class="flex items-center gap-2">
-		<div class="relative">
+		<div class="relative" use:clickOutside={closeBell}>
 			<button
 				type="button"
 				class="relative rounded-lg p-2 text-midnight hover:bg-periwinkle"
-				onclick={() => (bellOpen = !bellOpen)}
+				onclick={toggleBell}
 				aria-label="Notifications"
+				aria-expanded={bellOpen}
 			>
 				<Icon name="bell" class="h-5 w-5" />
 				{#if unreadCount > 0}
@@ -112,24 +130,27 @@
 			{/if}
 		</div>
 
-		<div class="relative">
+		<div class="relative" use:clickOutside={closeMenu}>
 			<button
 				type="button"
-				class="rounded-lg px-3 py-1.5 text-sm text-midnight hover:bg-periwinkle"
-				onclick={() => (menuOpen = !menuOpen)}
+				class="rounded-lg p-2 text-midnight hover:bg-periwinkle"
+				onclick={toggleMenu}
+				aria-label="Account menu"
+				aria-expanded={menuOpen}
 			>
-				{user.email}
+				<Icon name="user" class="h-5 w-5" />
 			</button>
 			{#if menuOpen}
 				<div
-					class="absolute right-0 z-50 mt-1 w-48 rounded-lg border border-sky-mist bg-sky-mist py-1 shadow-lg"
+					class="absolute right-0 z-50 mt-2 w-48 rounded-lg border border-sky-mist bg-sky-mist py-1 shadow-lg"
 				>
-					<a href="/dashboard/profile" class="block px-4 py-2 text-sm hover:bg-periwinkle"
-						>Profile</a
+					<a
+						href="/dashboard/settings"
+						class="block px-4 py-2 text-sm text-midnight hover:bg-periwinkle"
+						onclick={() => (menuOpen = false)}
 					>
-					<a href="/dashboard/settings" class="block px-4 py-2 text-sm hover:bg-periwinkle"
-						>Settings</a
-					>
+						Settings
+					</a>
 					<button
 						type="button"
 						class="w-full px-4 py-2 text-left text-sm text-danger hover:bg-periwinkle"

@@ -84,6 +84,11 @@
 	function canDelete(status: ContentEntry['status']) {
 		return status === 'draft' || status === 'archived';
 	}
+
+	function createEntry() {
+		if (!group) return;
+		goto(`/dashboard/modules/content/groups/${group.id}/new`);
+	}
 </script>
 
 {#if loading}
@@ -107,7 +112,7 @@
 				<p class="text-sm text-indigo">Add any mix of blog posts, recipes, videos, and more.</p>
 			{/if}
 		</div>
-		<Button variant="accent" onclick={() => goto(`/dashboard/modules/content/groups/${group.id}/new`)}>
+		<Button variant="accent" onclick={createEntry}>
 			New entry
 		</Button>
 	</div>

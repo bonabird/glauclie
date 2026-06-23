@@ -41,8 +41,11 @@
 			<p class="text-sm text-indigo">Write campaigns, capture subscribers, and track performance.</p>
 		</div>
 		<div class="flex flex-wrap gap-2">
+			<Button variant="secondary" onclick={() => goto('/dashboard/customers')}>
+				Accounts
+			</Button>
 			<Button variant="secondary" onclick={() => goto('/dashboard/modules/newsletters/subscribers')}>
-				Subscribers
+				Emails
 			</Button>
 			<Button variant="secondary" onclick={() => goto('/dashboard/modules/newsletters/capture')}>
 				Email capture

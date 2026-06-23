@@ -58,6 +58,9 @@
 		<path d="M2 20a7 7 0 0 1 14 0" />
 		<circle cx="17" cy="9" r="2.5" />
 		<path d="M22 20a5.5 5.5 0 0 0-6-4.5" />
+	{:else if icon === 'user'}
+		<circle cx="12" cy="8" r="4" />
+		<path d="M4 20a8 8 0 0 1 16 0" />
 	{:else if icon === 'lock'}
 		<rect x="5" y="11" width="14" height="10" rx="2" />
 		<path d="M8 11V8a4 4 0 0 1 8 0v3" />

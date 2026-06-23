@@ -84,7 +84,7 @@
 
 						{#if MODULE_QUICK_LINKS[mod.slug]?.length}
 							<ul class="mt-3 space-y-1 border-t border-sky-mist pt-3 text-sm">
-								{#each MODULE_QUICK_LINKS[mod.slug] as link (link.href)}
+								{#each MODULE_QUICK_LINKS[mod.slug] as link (link.label)}
 									<li>
 										<a href={link.href} class="text-ocean hover:underline">{link.label}</a>
 									</li>

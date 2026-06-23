@@ -1,11 +1,8 @@
 import type { Handle, HandleFetch } from '@sveltejs/kit';
-import { allowRegistration } from '$lib/env/public';
 import { apiInternalUrl } from '$lib/server/env';
 import { fetchMe, refreshSession } from '$lib/server/api';
 
-const registrationEnabled = allowRegistration();
-
-const PUBLIC_PREFIXES = ['/login', '/register', '/forgot-password', '/reset-password'];
+const PUBLIC_PREFIXES = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/auth/callback'];
 const RESERVED_SEGMENTS = new Set([
 	'login',
 	'register',
@@ -13,7 +10,10 @@ const RESERVED_SEGMENTS = new Set([
 	'reset-password',
 	'dashboard',
 	'api',
-	'embed'
+	'auth',
+	'embed',
+	'shop',
+	'verify-email'
 ]);
 
 function isPublicLinkPage(path: string): boolean {
@@ -21,9 +21,28 @@ function isPublicLinkPage(path: string): boolean {
 	return parts.length === 1 && !RESERVED_SEGMENTS.has(parts[0]);
 }
 
+function isPublicShopPage(path: string): boolean {
+	const parts = path.split('/').filter(Boolean);
+	return parts.length >= 2 && parts[1] === 'shop' && !RESERVED_SEGMENTS.has(parts[0]);
+}
+
+function isCustomDomainShopPage(path: string): boolean {
+	const parts = path.split('/').filter(Boolean);
+	return parts.length >= 1 && parts[0] === 'shop';
+}
+
 function isPublicCardPage(path: string): boolean {
 	const parts = path.split('/').filter(Boolean);
 	return parts.length === 2 && parts[0] === 'card' && !RESERVED_SEGMENTS.has(parts[1]);
+}
+
+function isPublicTenantAuthPage(path: string): boolean {
+	const parts = path.split('/').filter(Boolean);
+	return (
+		parts.length === 2 &&
+		!RESERVED_SEGMENTS.has(parts[0]) &&
+		(parts[1] === 'login' || parts[1] === 'register')
+	);
 }
 
 async function resolveSession(event: Parameters<Handle>[0]['event']) {
@@ -47,7 +66,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 		path === '/' ||
 		PUBLIC_PREFIXES.some((p) => path.startsWith(p)) ||
 		isPublicLinkPage(path) ||
-		isPublicCardPage(path);
+		isPublicShopPage(path) ||
+		isCustomDomainShopPage(path) ||
+		isPublicCardPage(path) ||
+		isPublicTenantAuthPage(path);
 
 	// Always resolve session when cookies are present (needed for /login redirect).
 	await resolveSession(event);
@@ -61,14 +83,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	}
 
-	if (!registrationEnabled && path === '/register') {
-		return new Response(null, {
-			status: 302,
-			headers: { Location: '/login' }
-		});
-	}
-
-	if (event.locals.user && (path === '/login' || path === '/register')) {
+	if (
+		event.locals.user &&
+		(path === '/login' || path === '/register') &&
+		event.locals.user.role !== 'member'
+	) {
 		return new Response(null, {
 			status: 302,
 			headers: { Location: '/dashboard' }

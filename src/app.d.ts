@@ -1,10 +1,11 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
-import type { SessionUser } from '$lib/types';
+import type { PublicTenant, SessionUser } from '$lib/types';
 
 declare global {
 	namespace App {
 		interface Locals {
 			user: SessionUser | null;
+			tenant: PublicTenant | null;
 			/** Updated Cookie header after silent refresh (SSR fetches). */
 			authCookie?: string;
 			/** Set-Cookie lines to forward to the browser after silent refresh. */
@@ -21,6 +22,8 @@ declare global {
 			PUBLIC_ALLOW_REGISTRATION?: string;
 			/** Go API URL for browser requests (e.g. https://api.glaucidae.com). Empty in local dev. */
 			PUBLIC_API_URL?: string;
+			/** Stripe publishable key for shop checkout. */
+			PUBLIC_STRIPE_PUBLISHABLE_KEY?: string;
 		}
 	}
 }

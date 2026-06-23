@@ -15,7 +15,6 @@
 	<div class="flex flex-1 flex-col">
 		{#if data.user}
 			<Header
-				user={data.user}
 				tenant={data.tenant}
 				unreadCount={data.unreadCount}
 				recentNotifications={data.recentNotifications}

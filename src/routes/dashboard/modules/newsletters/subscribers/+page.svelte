@@ -25,13 +25,13 @@
 </script>
 
 <svelte:head>
-	<title>Subscribers — Newsletters</title>
+	<title>Emails — Newsletters</title>
 </svelte:head>
 
 <div class="mb-6">
 	<a href="/dashboard/modules/newsletters" class="text-sm text-ocean hover:underline">← Campaigns</a>
-	<h1 class="mt-1 text-2xl font-semibold text-midnight">Subscribers</h1>
-	<p class="text-sm text-indigo">Per-tenant mailing list with GDPR consent tracking.</p>
+	<h1 class="mt-1 text-2xl font-semibold text-midnight">Emails</h1>
+	<p class="text-sm text-indigo">Mailing list subscribers, including sign-up opt-ins.</p>
 </div>
 
 {#if loading}

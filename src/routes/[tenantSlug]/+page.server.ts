@@ -9,6 +9,7 @@ const RESERVED = new Set([
 	'reset-password',
 	'dashboard',
 	'api',
+	'auth',
 	'embed'
 ]);
 

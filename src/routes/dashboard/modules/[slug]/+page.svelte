@@ -30,13 +30,19 @@
 		if (slug === 'business_card') {
 			goto('/dashboard/modules/business-card');
 		}
+		if (slug === 'commerce') {
+			goto('/dashboard/modules/commerce');
+		}
+		if (slug === 'community') {
+			goto('/dashboard/modules/community');
+		}
 		if ((HIDDEN_MODULE_SLUGS as readonly string[]).includes(slug)) {
 			goto('/dashboard');
 		}
 	});
 </script>
 
-{#if slug === 'content' || slug === 'newsletters' || slug === 'links' || slug === 'business_card' || (HIDDEN_MODULE_SLUGS as readonly string[]).includes(slug)}
+{#if slug === 'content' || slug === 'newsletters' || slug === 'links' || slug === 'business_card' || slug === 'commerce' || slug === 'community' || (HIDDEN_MODULE_SLUGS as readonly string[]).includes(slug)}
 	<p class="text-indigo">Redirecting…</p>
 {:else if mod?.locked}
 	<Card class="text-center">

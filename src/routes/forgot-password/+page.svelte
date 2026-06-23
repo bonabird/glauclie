@@ -4,6 +4,8 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 
+	let { data } = $props();
+
 	let email = $state('');
 	let sent = $state(false);
 	let loading = $state(false);
@@ -11,7 +13,11 @@
 	async function submit(e: Event) {
 		e.preventDefault();
 		loading = true;
-		await api('/api/v1/auth/forgot-password', { method: 'POST', json: { email } });
+		const body: Record<string, string> = { email };
+		if (data.tenant?.id) {
+			body.tenant_id = data.tenant.id;
+		}
+		await api('/api/v1/auth/forgot-password', { method: 'POST', json: body });
 		sent = true;
 		loading = false;
 	}

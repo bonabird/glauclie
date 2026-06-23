@@ -1,3 +1,103 @@
+export type TenantBranding = {
+	primaryColor: string;
+	backgroundColor: string;
+	cardColor: string;
+	textColor: string;
+	accentColor: string;
+};
+
+export type PublicTenant = {
+	id: string;
+	slug: string;
+	business_name: string;
+	logo_url: string | null;
+	branding: TenantBranding;
+};
+
+export type ShopProduct = {
+	id: string;
+	tenant_id: string;
+	name: string;
+	slug: string;
+	description: string;
+	price_cents: number;
+	currency: string;
+	image_url: string | null;
+	media: ProductMedia[];
+	categories: string[];
+};
+
+export type ProductMedia = {
+	thumbnail_url: string;
+	full_url: string;
+	position: number;
+};
+
+export type ShopOrder = {
+	id: string;
+	status: string;
+	product_name: string;
+	product_slug: string;
+	amount_cents: number;
+	currency: string;
+	download_token: string | null;
+	items: ShopOrderItem[];
+};
+
+export type ShopOrderItem = {
+	id: string;
+	order_id: string;
+	product_id: string;
+	quantity: number;
+	unit_price_cents: number;
+	currency: string;
+	product_name: string;
+	product_slug: string;
+	download_token: string | null;
+};
+
+export type CommerceProduct = {
+	id: string;
+	tenant_id: string;
+	name: string;
+	slug: string;
+	description: string;
+	price_cents: number;
+	currency: string;
+	image_url: string | null;
+	media: ProductMedia[];
+	categories: string[];
+	unlocks_tier: 'free' | 'paid' | 'vip' | null;
+	has_file: boolean;
+	status: 'draft' | 'active' | 'archived';
+	active: boolean;
+	created_at: string;
+	updated_at: string;
+};
+
+export type StripeConnectStatus = {
+	connected: boolean;
+	charges_enabled: boolean;
+	account_id?: string | null;
+	connected_at?: string | null;
+};
+
+export type CommunityUser = {
+	id: string;
+	email: string;
+	name: string;
+	tier: 'free' | 'paid' | 'vip';
+	email_verified: boolean;
+	joined_at: string;
+	last_active_at: string | null;
+	order_count: number;
+	promotional_consent: boolean;
+	promotional_source?: string | null;
+	promotional_consent_at?: string | null;
+	banned_at: string | null;
+	status: 'active' | 'banned';
+};
+
 export type SessionUser = {
 	id: string;
 	tenant_id: string;
@@ -110,6 +210,7 @@ export type Subscriber = {
 	email: string;
 	consent_at: string;
 	consent_ip: string | null;
+	source: string;
 	unsubscribed_at: string | null;
 	created_at: string;
 };

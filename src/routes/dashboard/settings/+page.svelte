@@ -19,6 +19,9 @@
 			>
 		</li>
 		<li>
+			<a href="/dashboard/settings/stripe" class="text-ocean hover:underline">Stripe Connect</a>
+		</li>
+		<li>
 			<a href="/dashboard/settings/danger-zone" class="text-danger hover:underline">Danger zone</a>
 		</li>
 	</ul>

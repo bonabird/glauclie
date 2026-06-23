@@ -28,7 +28,7 @@
 			return;
 		}
 		if (action.action === 'gated_login') {
-			window.location.href = `/login?redirect=/${pageData.slug}`;
+			window.location.href = `/${pageData.slug}/login?redirect_to=/${pageData.slug}`;
 			return;
 		}
 		if (action.action === 'community_tier' && action.url) {

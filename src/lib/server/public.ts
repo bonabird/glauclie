@@ -1,4 +1,5 @@
 import { serverApiUrl } from '$lib/server/env';
+import type { Product } from '$lib/server/tenant';
 
 export type PublicLinkPageData = {
 	slug: string;
@@ -28,6 +29,7 @@ export type PublicLinkPageData = {
 		business_name: string;
 		logo_url: string | null;
 	};
+	products: Product[];
 };
 
 export async function fetchPublicLinkPage(tenantSlug: string): Promise<PublicLinkPageData | null> {
@@ -36,7 +38,9 @@ export async function fetchPublicLinkPage(tenantSlug: string): Promise<PublicLin
 			serverApiUrl(`/api/v1/public/${encodeURIComponent(tenantSlug)}/links`)
 		);
 		if (!res.ok) return null;
-		return (await res.json()) as PublicLinkPageData;
+		const data = (await res.json()) as PublicLinkPageData;
+		data.products ??= [];
+		return data;
 	} catch {
 		return null;
 	}
@@ -64,7 +68,9 @@ export async function fetchPublicLinkPageByDomain(host: string): Promise<PublicL
 			serverApiUrl(`/api/v1/public/links/by-domain?host=${encodeURIComponent(host)}`)
 		);
 		if (!res.ok) return null;
-		return (await res.json()) as PublicLinkPageData;
+		const data = (await res.json()) as PublicLinkPageData;
+		data.products ??= [];
+		return data;
 	} catch {
 		return null;
 	}

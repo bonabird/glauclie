@@ -8,6 +8,7 @@ export type IconName =
 	| 'id-card'
 	| 'cart'
 	| 'users'
+	| 'user'
 	| 'default'
 	| 'lock'
 	| 'bell'
@@ -54,6 +55,7 @@ export function isIconName(value: string): value is IconName {
 			'id-card',
 			'cart',
 			'users',
+			'user',
 			'default',
 			'lock',
 			'bell',
