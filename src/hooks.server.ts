@@ -1,8 +1,9 @@
 import type { Handle, HandleFetch } from '@sveltejs/kit';
+import { hasAuthCookies } from '$lib/server/platform';
 import { apiInternalUrl } from '$lib/server/env';
 import { fetchMe, refreshSession } from '$lib/server/api';
 
-const PUBLIC_PREFIXES = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/auth/callback'];
+const PUBLIC_PREFIXES = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/auth/callback', '/auth/logout'];
 const RESERVED_SEGMENTS = new Set([
 	'login',
 	'register',
@@ -71,14 +72,27 @@ export const handle: Handle = async ({ event, resolve }) => {
 		isPublicCardPage(path) ||
 		isPublicTenantAuthPage(path);
 
-	// Always resolve session when cookies are present (needed for /login redirect).
-	await resolveSession(event);
+	// Skip API session checks on public pages when the browser sent no auth cookies.
+	const cookie = event.request.headers.get('cookie');
+	const needsSession =
+		!isPublic || path.startsWith('/dashboard') || hasAuthCookies(cookie);
+
+	if (needsSession) {
+		await resolveSession(event);
+	}
 
 	if (!isPublic && path.startsWith('/dashboard')) {
 		if (!event.locals.user) {
 			return new Response(null, {
 				status: 302,
 				headers: { Location: '/login' }
+			});
+		}
+		// The dashboard is tenant-staff only. Customer (member) accounts must not access it.
+		if (event.locals.user.role === 'member') {
+			return new Response(null, {
+				status: 302,
+				headers: { Location: '/' }
 			});
 		}
 	}

@@ -1,14 +1,10 @@
 import type { LayoutServerLoad } from './$types';
-import { fetchTenantByDomain } from '$lib/server/tenant';
+import { isLocalHost, resolveTenantForHost } from '$lib/server/platform';
 
 export const load: LayoutServerLoad = async ({ request, url }) => {
 	const host = request.headers.get('host')?.split(':')[0] ?? '';
-	const isLocal = host === 'localhost' || host === '127.0.0.1';
 
-	let tenant = null;
-	if (!isLocal && host) {
-		tenant = await fetchTenantByDomain(host);
-	}
+	const tenant = !isLocalHost(host) && host ? await resolveTenantForHost(host) : null;
 
 	return {
 		tenant,

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { api } from '$lib/api/client';
 	import { clickOutside } from '$lib/actions/click-outside';
 	import Icon from '$lib/components/icons/Icon.svelte';
@@ -19,6 +18,7 @@
 
 	let menuOpen = $state(false);
 	let bellOpen = $state(false);
+	let loggingOut = $state(false);
 
 	function toggleBell() {
 		bellOpen = !bellOpen;
@@ -38,9 +38,10 @@
 		menuOpen = false;
 	}
 
-	async function logout() {
-		await api('/api/v1/auth/logout', { method: 'POST' });
-		await goto('/login');
+	function logout() {
+		loggingOut = true;
+		menuOpen = false;
+		window.location.assign('/auth/logout');
 	}
 
 	async function markRead(id: string) {
@@ -153,10 +154,11 @@
 					</a>
 					<button
 						type="button"
-						class="w-full px-4 py-2 text-left text-sm text-danger hover:bg-periwinkle"
+						class="w-full px-4 py-2 text-left text-sm text-danger hover:bg-periwinkle disabled:opacity-60"
 						onclick={logout}
+						disabled={loggingOut}
 					>
-						Log out
+						{loggingOut ? 'Signing out…' : 'Log out'}
 					</button>
 				</div>
 			{/if}

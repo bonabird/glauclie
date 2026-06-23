@@ -115,7 +115,11 @@
 
 		<p class="mt-4 text-center text-sm text-indigo">
 			Already have an account?
-			<a href="/login?redirect_to={encodeURIComponent(redirectTo)}" class="font-medium text-ocean hover:underline">Sign in</a>
+			<a
+				href="/login?redirect_to={encodeURIComponent(redirectTo)}"
+				data-sveltekit-reload
+				class="font-medium text-ocean hover:underline"
+			>Sign in</a>
 		</p>
 	</Card>
 </div>

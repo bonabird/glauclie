@@ -89,7 +89,11 @@
 		{#if registrationEnabled}
 			<p class="mt-2 text-center text-sm text-indigo">
 				No account?
-				<a href="/register?redirect_to={encodeURIComponent(redirectTo)}" class="font-medium text-ocean hover:underline">Register</a>
+			<a
+				href="/register?redirect_to={encodeURIComponent(redirectTo)}"
+				data-sveltekit-reload
+				class="font-medium text-ocean hover:underline"
+			>Register</a>
 			</p>
 		{/if}
 	</Card>
