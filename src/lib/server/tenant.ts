@@ -117,6 +117,7 @@ export async function createCheckoutSession(
 export type CheckoutSessionDetail = {
 	order: OrderDetail;
 	client_secret?: string;
+	stripe_account_id?: string;
 	status: string;
 };
 

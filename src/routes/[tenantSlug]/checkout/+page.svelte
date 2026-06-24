@@ -29,7 +29,12 @@
 			error = 'Payments are not configured.';
 			return;
 		}
-		stripe = await loadStripe(publishableKey);
+		// Direct charges are created on the tenant's connected account, so Stripe.js
+		// must be scoped to that account to load and confirm the PaymentIntent.
+		stripe = await loadStripe(
+			publishableKey,
+			checkout.stripe_account_id ? { stripeAccount: checkout.stripe_account_id } : undefined
+		);
 		if (!stripe) {
 			error = 'Payments are not available.';
 			return;
