@@ -140,6 +140,8 @@
 			{#if item.download_token}
 				<a
 					href={apiUrl(`/api/v1/ecommerce/downloads/${item.download_token}`)}
+					target="_blank"
+					rel="noopener"
 					class="mt-4 block rounded-lg px-4 py-3 text-center font-medium text-white"
 					style="background-color: var(--accent);"
 				>
