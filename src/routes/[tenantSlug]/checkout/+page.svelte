@@ -55,6 +55,23 @@
 		if (redirectTimer) clearTimeout(redirectTimer);
 	});
 
+	let downloadsOpened = false;
+	// Open each purchased file in a new tab automatically once the order is paid.
+	function openDownloads() {
+		if (downloadsOpened) return;
+		downloadsOpened = true;
+		for (const item of order.items) {
+			if (!item.download_token) continue;
+			const a = document.createElement('a');
+			a.href = apiUrl(`/api/v1/ecommerce/downloads/${item.download_token}`);
+			a.target = '_blank';
+			a.rel = 'noopener';
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+		}
+	}
+
 	async function refreshCheckout() {
 		// Do not send platform cookies: the session token is the bearer credential,
 		// and an unrelated platform session would fail the ownership check.
@@ -74,6 +91,7 @@
 			pollTimer = null;
 		}
 		writeCart(data.tenantSlug, []);
+		openDownloads();
 		// Send the buyer back to the tenant's own site once they've had a moment to
 		// see the confirmation and grab their download.
 		if (returnUrl && !redirectTimer) {
