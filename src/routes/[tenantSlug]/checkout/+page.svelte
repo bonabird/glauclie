@@ -18,7 +18,6 @@
 	const order = $derived(checkout?.order ?? data.checkout.order);
 	const returnUrl = $derived<string | null>(data.returnUrl ?? null);
 
-	let downloadsStarted = false;
 	let redirectTimer: ReturnType<typeof setTimeout> | null = null;
 
 	$effect(() => {
@@ -56,23 +55,6 @@
 		if (redirectTimer) clearTimeout(redirectTimer);
 	});
 
-	// Kick off the digital download(s) as soon as the order is paid. The download
-	// endpoint forces an attachment disposition, so clicking these links saves the
-	// file without navigating the page away from this thank-you screen.
-	function startDownloads() {
-		if (downloadsStarted) return;
-		downloadsStarted = true;
-		for (const item of order.items) {
-			if (!item.download_token) continue;
-			const a = document.createElement('a');
-			a.href = apiUrl(`/api/v1/ecommerce/downloads/${item.download_token}`);
-			a.rel = 'noopener';
-			document.body.appendChild(a);
-			a.click();
-			a.remove();
-		}
-	}
-
 	async function refreshCheckout() {
 		// Do not send platform cookies: the session token is the bearer credential,
 		// and an unrelated platform session would fail the ownership check.
@@ -92,9 +74,8 @@
 			pollTimer = null;
 		}
 		writeCart(data.tenantSlug, []);
-		startDownloads();
 		// Send the buyer back to the tenant's own site once they've had a moment to
-		// see the confirmation and the download has started.
+		// see the confirmation and grab their download.
 		if (returnUrl && !redirectTimer) {
 			const target = returnUrl;
 			redirectTimer = setTimeout(() => {
@@ -154,10 +135,7 @@
 
 	{#if order.status === 'paid'}
 		<h2 class="text-xl font-semibold" style="color: var(--primary);">Thank you!</h2>
-		<p class="mt-2 opacity-80">
-			Your payment was successful and your download is starting automatically. If it doesn't, use
-			the link below.
-		</p>
+		<p class="mt-2 opacity-80">Your payment was successful.</p>
 		{#each order.items as item}
 			{#if item.download_token}
 				<a
