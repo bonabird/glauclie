@@ -24,5 +24,21 @@ export const load: PageServerLoad = async ({ url }) => {
 		);
 	}
 
-	return { sessionToken: token, checkout: session };
+	return { sessionToken: token, checkout: session, returnUrl: sanitizeReturnUrl(url.searchParams.get('return_url')) };
 };
+
+// The tenant's site passes where to send the buyer after a successful payment.
+// Only accept absolute http(s) URLs to avoid an open-redirect / javascript: URL
+// being smuggled through the checkout link.
+function sanitizeReturnUrl(raw: string | null): string | null {
+	if (!raw) return null;
+	try {
+		const parsed = new URL(raw);
+		if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+			return parsed.toString();
+		}
+	} catch {
+		// not a valid absolute URL
+	}
+	return null;
+}
