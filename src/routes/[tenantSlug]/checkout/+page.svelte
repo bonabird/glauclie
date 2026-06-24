@@ -44,9 +44,11 @@
 	});
 
 	async function refreshCheckout() {
+		// Do not send platform cookies: the session token is the bearer credential,
+		// and an unrelated platform session would fail the ownership check.
 		const res = await fetch(
 			apiUrl(`/api/v1/ecommerce/checkout-session/${encodeURIComponent(data.sessionToken)}`),
-			{ credentials: 'include' }
+			{ credentials: 'omit' }
 		);
 		if (res.ok) {
 			checkout = await res.json();
