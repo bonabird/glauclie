@@ -25,8 +25,12 @@
 	onMount(async () => {
 		checkout ??= data.checkout;
 		if (order.status === 'paid') return;
-		if (!publishableKey || !checkout?.client_secret) {
-			error = 'Payments are not configured.';
+		if (!publishableKey) {
+			error = 'Payments are not configured: missing publishable key.';
+			return;
+		}
+		if (!checkout?.client_secret) {
+			error = 'Payments are not configured: missing payment secret for this order.';
 			return;
 		}
 		// Direct charges are created on the tenant's connected account, so Stripe.js
